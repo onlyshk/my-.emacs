@@ -34,6 +34,12 @@
 ;; Save buffer
 (global-set-key [f2] 'save-buffer)
 
+;; Shell start
+(global-set-key [f4] 'shell)
+
+;; Spell
+(global-set-key [f5] 'ispell)
+
 ;; Prev error
 (global-set-key [f11] 'next-error)
 
@@ -60,11 +66,14 @@
 (setq scroll-bar-mode-explicit t) 
 (set-scroll-bar-mode `right)
 
+;; scrollbar color
+;;(scroll-bar-mode (background "Dark slate gray"))
+
 ;; Emacs colors
 (defun good-colors ()
   (progn
 	 (set-background-color "DimGray")
-	 (set-foreground-color "LightGray")
+	 (set-foreground-color "White")
 	 (set-cursor-color "Black")
 	 (set-border-color "DimGray")
 	 (set-mouse-color "Black")
@@ -94,6 +103,9 @@
 
 ;; calls the toggle-fullscreen
 (toggle-fullscreen)  
+
+;;to display time
+(display-time)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -137,3 +149,12 @@
         (list 'c-mode 'c++-mode 'c++-c-mode 'emacs-lisp-mode 'lisp-mode 'perl-mode 'scheme-mode)
          "List of modes to always start in font-lock-mode")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; CUA mode
+;;
+(cua-mode t)
+    (setq cua-auto-tabify-rectangles nil) ;; Don't tabify after rectangle commands
+    (transient-mark-mode 1) ;; No region when it is not highlighted
+    (setq cua-keep-region-after-copy t) ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
