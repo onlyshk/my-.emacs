@@ -2,6 +2,17 @@
 ;; Emacs Config 
 ;;
 
+;; seems sensible for this to be the first line..
+(add-to-list 'load-path "~/.emacs.d/")
+
+(load-file "/home/shk/emacs-23.2/lisp/cedet/cedet.el")
+
+(require 'auto-complete)
+(global-auto-complete-mode t)
+(require 'yasnippet)
+;;(yas/initialize)
+;;(yas/load-directory "/home/shk/.emacs.d/snippets")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; windows navigation Emacs <S-up>, <S-down>, <S-left>, <S-right>.
 ;;
@@ -13,6 +24,22 @@
   (split-window-horizontally)
   (split-window-vertically)	
   )
+
+;; C-tab switchs to a next window
+(global-set-key [(control tab)] 'other-window)
+
+(custom-set-variables
+  ;; custom-set-variables was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ '(blink-cursor-mode nil)
+ '(column-number-mode t)
+ '(cua-mode t nil (cua-base))
+ '(cursor-in-non-selected-windows nil)
+ '(display-time-mode t)
+ '(show-paren-mode t)
+ '(text-mode-hook (quote (turn-on-auto-fill text-mode-hook-identify))))
 
 ;;|-----------+-----------|
 ;;|           |           |
@@ -31,14 +58,15 @@
 (define-key global-map (kbd "C-+") 'text-scale-increase)
 (define-key global-map (kbd "C--") 'text-scale-decrease)
 
+
 ;; Save buffer
 (global-set-key [f2] 'save-buffer)
 
 ;; Shell start
 (global-set-key [f4] 'shell)
 
-;; Spell
-(global-set-key [f5] 'ispell)
+;; gdb
+(global-set-key [f5] 'gdb)
 
 ;; Prev error
 (global-set-key [f11] 'next-error)
@@ -49,9 +77,11 @@
 ;; Compile
 (global-set-key [(f9)] 'compile)
 
+;; Recompile
+(global-set-key [f7] 'recompile)
+
 ;; Go to line
 (global-set-key "\M-g" 'goto-line)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -66,8 +96,11 @@
 (setq scroll-bar-mode-explicit t) 
 (set-scroll-bar-mode `right)
 
-;; scrollbar color
-;;(scroll-bar-mode (background "Dark slate gray"))
+;;emacs font
+;;(set-default-font "-*-consolas-*-16-*-*-*-*-*-*-cp1251")
+
+;; emacs select
+(setq x-select-enable-clipboard t)
 
 ;; Emacs colors
 (defun good-colors ()
@@ -158,3 +191,16 @@
     (transient-mark-mode 1) ;; No region when it is not highlighted
     (setq cua-keep-region-after-copy t) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Emacs encodig
+;;
+(setq locale-coding-system 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(set-selection-coding-system 'utf-8)
+(prefer-coding-system 'utf-8)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
