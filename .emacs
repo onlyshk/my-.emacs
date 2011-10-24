@@ -1,71 +1,103 @@
-;;
-;; Emacs Config 
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Standard functional
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'linum)
+
+(global-linum-mode)
+
+(desktop-save-mode 1)
+
+(tool-bar-mode nil)
+
+(menu-bar-mode -1)
+
+(scroll-bar-mode nil)  
+
+(setq x-select-enable-clipboard t)
+
+(defun toggle-fullscreen ()
+  (interactive)
+  (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
+	    		 '(2 "_NET_WM_STATE_MAXIMIZED_VERT" 0))
+  (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
+	    		 '(2 "_NET_WM_STATE_MAXIMIZED_HORZ" 0))
+)
+
+(toggle-fullscreen)  
+
+(display-time)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Haskell 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-to-list 'load-path "~/.emacs.d/")
 
-(require 'auto-complete)
-(global-auto-complete-mode t)
-(require 'yasnippet)
-(require 'linum)
-(global-linum-mode)
+(load "/home/shk/.emacs.d/haskellmode-emacs/haskell-site-file")
+(add-hook 'haskell-mode-hook 'turn-on-haskell-doc-mode)
+(add-hook 'haskell-mode-hook 'turn-on-haskell-indentation)
+(add-hook 'haskell-mode-hook 'turn-on-haskell-indent)
+(add-hook 'haskell-mode-hook 'turn-on-haskell-simple-indent)
+			      
+(setq haskell-program-name "/usr/bin/ghci")
 
-(load-file "/usr/share/emacs/site-lisp/cedet/common/cedet.el")
-(global-ede-mode t)
-(semantic-load-enable-excessive-code-helpers)
-(require 'semantic-gcc)
-(require 'semantic-ia)
-(require 'semanticdb)
-(global-semanticdb-minor-mode 1)
+(defun substitute-pattern-with-unicode (pattern symbol)
+    "Add a font lock hook to replace the matched part of PATTERN with the                                       
+     Unicode symbol SYMBOL looked up with UNICODE-SYMBOL."
+    (font-lock-add-keywords
+    nil `((,pattern 
+           (0 (progn (compose-region (match-beginning 1) (match-end 1)
+                                     ,(unicode-symbol symbol)
+                                     'decompose-region)
+                             nil))))))
 
-;;
-;; Erlang
-;;
-;; This is needed for Erlang mode setup
-(setq load-path (cons  "/usr/lib/erlang/lib/tools-2.6.6.1/emacs"
-      load-path))
+(defun substitute-patterns-with-unicode (patterns)
+   "Call SUBSTITUTE-PATTERN-WITH-UNICODE repeatedly."
+   (mapcar #'(lambda (x)
+               (substitute-pattern-with-unicode (car x)
+                                                (cdr x)))
+           patterns))
+           
+(add-hook 'haskell-mode-hook 'haskell-unicode)
 
-(setq load-path (cons "/usr/local/Cellar/erlang/R13B04/lib/erlang/lib/tools-2.6.6.1/emacs/erlang-skels.el"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Erlang 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                       
+(setq load-path (cons "/usr/lib/erlang/lib/tools-2.6.6.1/emacs" 
 	load-path))
+		
+(setq exec-path (cons "/usr/local/lib/erlang/bin" exec-path))
 
 (add-to-list 'auto-mode-alist '("\\.erl?$" . erlang-mode))
 (add-to-list 'auto-mode-alist '("\\.hrl?$" . erlang-mode))
-
 
 (setq erlang-root-dir "/usr/lib/erlang")
 (add-to-list 'exec-path "/usr/lib/erlang/bin")
 (setq erlang-man-root-dir "/usr/lib/erlang/man")
 
 (defun my-erlang-mode-hook ()
-        ;; when starting an Erlang shell in Emacs, default in the node name
         (setq inferior-erlang-machine-options '("-sname" "emacs"))
-        ;; add Erlang functions to an imenu menu
         (imenu-add-to-menubar "imenu")
-        ;; customize keys
         (local-set-key [return] 'newline-and-indent)
-
-        (set-frame-height (selected-frame) 20)
-        )
+        (set-frame-height (selected-frame) 20))
 
 (defun erl-shell (flags)
    "Start an erlang shell with flags"
    (interactive (list (read-string "Flags: ")))
    (set 'inferior-erlang-machine-options (split-string flags))
+   (set-frame-height  5)
    (erlang-shell))
-
-;; Some Erlang customizations
+   
 (add-hook 'erlang-mode-hook 'my-erlang-mode-hook)
 (require 'erlang-start)
 
-(let ((distel-dir "/home/shk/.emacs.d/distel/elisp"))
-  (unless (member distel-dir load-path)
-    ;; Add distel-dir to the end of load-path
-    (setq load-path (append load-path (list distel-dir)))))
+;;(add-to-list 'load-path "~/.emacs.d/distel/elisp")
+;;(require 'distel)
+;;(distel-setup)
 
-
-(require 'distel)
-(distel-setup)
-
+;; A number of the erlang-extended-mode key bindings are useful in the shell too
 (defconst distel-shell-keys
   '(("\C-\M-i"   erl-complete)
     ("\M-?"      erl-complete)
@@ -75,73 +107,33 @@
     )
   "Additional keys to bind when in Erlang shell.")
 
-(add-hook 'erlang-shell-mode-hook
-	  (lambda ()
-	    ;; add some Distel bindings to the Erlang shell
-	    (dolist (spec distel-shell-keys)
-	      (define-key erlang-shell-mode-map (car spec) (cadr spec)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun my-cedet-hook ()
-  (local-set-key [(control return)] 'semantic-ia-complete-symbol)
-  (local-set-key "\C-a" 'semantic-ia-complete-symbol-menu)
-  (local-set-key "\C-c>" 'semantic-complete-analyze-inline)
-  (local-set-key "\C-cp" 'semantic-analyze-proto-impl-toggle))
-(add-hook 'c-mode-common-hook 'my-cedet-hook)
-
-(defun my-c-mode-cedet-hook ()
- (local-set-key "." 'semantic-complete-self-insert)
- (local-set-key ">" 'semantic-complete-self-insert))
-(add-hook 'c-mode-common-hook 'my-c-mode-cedet-hook)
-
-;;
-;; semantic includes
-;;
-(semantic-add-system-include "/usr/include" 'c-mode)
-
-(add-hook 'scala-mode-hook
-          '(lambda ()
-             (yas/minor-mode-on)))
-
-;;;;;;;;;
-;; Tabbar
-
+(add-hook 'erlang-shell-mode-hook (lambda ()
+          (dolist (spec distel-shell-keys)
+          (define-key erlang-shell-mode-map (car spec) (cadr spec)))))
+          
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Tabs 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'tabbar)
 
-(global-set-key [C-s-tab] 'tabbar-backward-tab)
+(global-set-key [C-left] 'tabbar-backward-tab)
+(global-set-key [C-right] 'tabbar-forward-tab)
 (global-set-key [C-tab] 'tabbar-forward-tab)
 
 (global-set-key (kbd "C-x C-<right>") 'tabbar-forward-group)
 (global-set-key (kbd "C-x C-<left>") 'tabbar-backward-group)
 
-(set-face-attribute
-'tabbar-default-face nil
-:background "gray0")
-(set-face-attribute
-'tabbar-unselected-face nil
-:background "gray5"
-:foreground "white"
-:box nil)
-(set-face-attribute
-'tabbar-selected-face nil
-:background "grey100"
-:foreground "black"
-:box nil)
-(set-face-attribute
-'tabbar-button-face nil
-:box '(:line-width 1 :color "gray100" :style released-button))
-(set-face-attribute
-'tabbar-separator-face nil
-:height 0.6)
+(set-face-attribute 'tabbar-default-face    nil   :background "gray0")
+(set-face-attribute 'tabbar-unselected-face nil   :background "gray5"   :foreground "white"   :box nil)
+(set-face-attribute 'tabbar-selected-face   nil   :background "dim gray" :foreground "orange"   :box nil)
+(set-face-attribute 'tabbar-button-face nil :box  '(:line-width 3 :color "gray100" :style released-button))
+(set-face-attribute 'tabbar-separator-face  nil   :height 0.8)
 
 (tabbar-mode)
-;; tabbar end
-;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; windows navigation Emacs <S-up>, <S-down>, <S-left>, <S-right>.
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Windows navigation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (windmove-default-keybindings)
 
 (defun my-make-three-windows () 
@@ -178,20 +170,15 @@
 ;;|-----------+-----------|
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; key bindings
-;;
-
-;; Font size
-(define-key global-map (kbd "C-+") 'text-scale-increase)
-(define-key global-map (kbd "C--") 'text-scale-decrease)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; key bindings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Save buffer
 (global-set-key [f2] 'save-buffer)
 
 ;; Shell start
-(global-set-key [f4] 'shell)
+(global-set-key [f4] 'ansi-term)
 
 ;; gdb
 (global-set-key [f5] 'gdb)
@@ -209,110 +196,54 @@
 (global-set-key [f7] 'recompile)
 
 ;; Go to line
+(global-set-key "\C-g" 'goto-line)
 (global-set-key "\M-g" 'goto-line)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Cua mode
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Emacs customization
-;;
-
-;; Toolbar hide
-(tool-bar-mode nil)
-
-;; Scrollbar hide
-(scroll-bar-mode nil)  
-
-;; emacs select
-(setq x-select-enable-clipboard t)
-
-;; Emacs colors
-(defun good-colors ()
-  (progn
-	 (set-background-color "grey46")
-	 (set-foreground-color "White")
-	 (set-cursor-color "Black")
-	 (set-border-color "dark orange")
-	 (set-mouse-color "dark orange")
-	 
-	 (set-face-background 'default "grey46")
-	 (set-face-background 'region "Orange")
-	 (set-face-background 'highlight "white")
-	 (set-face-background 'modeline "black") ;;; CornflowerBlue")
-	 
-	 (set-face-foreground 'default "LightGray")
-	 (set-face-foreground 'region "dark orange")
-	 (set-face-foreground 'highlight "LightGray")  ;;; DimGray")
-	 (set-face-foreground 'modeline "LightGray")
-	 ))
-
-;; calls the previously-defined function
-(good-colors)
-
-;; Emacs fullscreen at startup
-(defun toggle-fullscreen ()
-  (interactive)
-  (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
-	    		 '(2 "_NET_WM_STATE_MAXIMIZED_VERT" 0))
-  (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
-	    		 '(2 "_NET_WM_STATE_MAXIMIZED_HORZ" 0))
-)
-
-;; calls the toggle-fullscreen
-(toggle-fullscreen)  
-
-;;to display time
-(display-time)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;cc-mode
-;;
-(require 'cc-mode)
-(global-font-lock-mode 1)
-
-(setq tab-width 4)
-(define-key c-mode-map "\C-m" 'reindent-then-newline-and-indent)
-(define-key c-mode-map "\C-ce" 'c-comment-edit)
-(setq c-auto-hungry-initial-state 'none)
-(setq c-delete-function 'backward-delete-char)
-(setq c-tab-always-indent t)
-
-;; compilation-window-height
-(setq compilation-window-height 14)
-
-(add-hook 'c-mode-hook        
-	  '(lambda ( ) 
-	     (c-set-style "k&r")))
-
-;; Auto font lock mode
-(defvar font-lock-auto-mode-list 
-        (list 'c-mode 'c++-mode 'c++-c-mode 'emacs-lisp-mode 'lisp-mode 'perl-mode 'scheme-mode)
-         "List of modes to always start in font-lock-mode")
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; CUA mode
-;;
 (cua-mode t)
-    (setq cua-auto-tabify-rectangles nil) ;; Don't tabify after rectangle commands
+    (setq cua-auto-tabify-rectangles nil) 
     (transient-mark-mode 1) ;; No region when it is not highlighted
-    (setq cua-keep-region-after-copy t) ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    (setq cua-keep-region-after-copy t) 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Emacs encodig
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Emacs encoding
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (setq locale-coding-system 'utf-8)
 (set-terminal-coding-system 'utf-8)
 (set-keyboard-coding-system 'utf-8)
 (set-selection-coding-system 'utf-8)
 (prefer-coding-system 'utf-8)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Emacs theme
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-to-list 'load-path "~/.emacs.d/color-theme")
+(require 'color-theme)
+(color-theme-initialize)
+(color-theme-gnome2)
 
 (custom-set-faces
-  ;; custom-set-faces was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "grey46" :foreground "LightGray" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 127 :width normal :foundry "microsoft" :family "Consolas")))))
+ '(default ((t (:inherit nil :stipple nil :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 130 :width normal :foundry "microsoft" :family "Consolas")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Emacs custom variables
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(custom-set-variables
+ '(abbrev-mode t)
+ '(user-full-name "Alexander Kuleshov")
+ '(user-mail-address "kuleshovmail@gmail.com")
+ )
+ 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Emacs dir tree
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-to-list 'load-path "~/.emacs.d/dir-utils")
+(require 'dirtree)
